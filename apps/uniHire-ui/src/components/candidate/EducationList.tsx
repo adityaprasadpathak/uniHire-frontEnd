@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, GraduationCap, Loader2 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
+import { formatDateRange } from './ResumePreviewRenderer';
 
 interface EducationData {
   degree: string;
@@ -52,7 +53,7 @@ export default function EducationList({ educations = [] }: { educations: any[] }
               <h4 className="font-semibold text-slate-900">{edu.degree}</h4>
               <p className="text-sm text-slate-600 font-medium">{edu.institution}</p>
               <p className="text-xs text-slate-500 mt-1">
-                {edu.startDate} - {edu.endDate || 'Present'}
+                {formatDateRange(edu.startDate, edu.endDate)}
               </p>
               <p className="text-sm text-slate-700 mt-2">{edu.description}</p>
             </div>

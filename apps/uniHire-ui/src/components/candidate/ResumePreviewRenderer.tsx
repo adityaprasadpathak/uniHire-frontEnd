@@ -25,6 +25,94 @@ export const ResumePreviewRenderer: React.FC<Props> = ({ data, template = 'ATS_M
     );
 };
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+
+export function formatResumeDate(dateStr?: string | null): string {
+    if (!dateStr || !dateStr.trim()) return '';
+    const trimmed = dateStr.trim();
+    if (trimmed.toLowerCase() === 'present' || trimmed.toLowerCase() === 'current') return 'Present';
+
+    // 1. Check YYYY-MM-DD or YYYY/MM/DD
+    const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/]\d{1,2}$/);
+    if (isoMatch) {
+        const year = isoMatch[1];
+        const month = parseInt(isoMatch[2], 10);
+        if (month >= 1 && month <= 12) {
+            return `${MONTH_NAMES[month - 1]}-${year}`;
+        }
+    }
+
+    // 2. Check YYYY-MM or YYYY/MM
+    const ymMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})$/);
+    if (ymMatch) {
+        const year = ymMatch[1];
+        const month = parseInt(ymMatch[2], 10);
+        if (month >= 1 && month <= 12) {
+            return `${MONTH_NAMES[month - 1]}-${year}`;
+        }
+    }
+
+    // 3. Check MM-YYYY or MM/YYYY
+    const myMatch = trimmed.match(/^(\d{1,2})[-/](\d{4})$/);
+    if (myMatch) {
+        const month = parseInt(myMatch[1], 10);
+        const year = myMatch[2];
+        if (month >= 1 && month <= 12) {
+            return `${MONTH_NAMES[month - 1]}-${year}`;
+        }
+    }
+
+    // 4. Check DD-MM-YYYY or DD/MM/YYYY
+    const dmyMatch = trimmed.match(/^\d{1,2}[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmyMatch) {
+        const month = parseInt(dmyMatch[1], 10);
+        const year = dmyMatch[2];
+        if (month >= 1 && month <= 12) {
+            return `${MONTH_NAMES[month - 1]}-${year}`;
+        }
+    }
+
+    // 5. Check text month and year (e.g. "Sept 2026", "September 2026", "May 2023", "01 May 2023")
+    const monthMap: Record<string, string> = {
+        jan: 'Jan', january: 'Jan',
+        feb: 'Feb', february: 'Feb',
+        mar: 'Mar', march: 'Mar',
+        apr: 'Apr', april: 'Apr',
+        may: 'May',
+        jun: 'Jun', june: 'Jun',
+        jul: 'Jul', july: 'Jul',
+        aug: 'Aug', august: 'Aug',
+        sep: 'Sept', sept: 'Sept', september: 'Sept',
+        oct: 'Oct', october: 'Oct',
+        nov: 'Nov', november: 'Nov',
+        dec: 'Dec', december: 'Dec',
+    };
+    const words = trimmed.toLowerCase().split(/[\s,–—\-_/]+/);
+    const yearMatch = trimmed.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) {
+        const year = yearMatch[1];
+        for (const w of words) {
+            if (monthMap[w]) {
+                return `${monthMap[w]}-${year}`;
+            }
+        }
+        if (/^\d{4}$/.test(trimmed)) return trimmed;
+    }
+
+    return trimmed;
+}
+
+export function formatDateRange(startDate?: string | null, endDate?: string | null, defaultEnd: string = 'Present'): string {
+    const formattedStart = formatResumeDate(startDate);
+    const isPresent = !endDate || endDate.trim().toLowerCase() === 'present' || endDate.trim().toLowerCase() === 'current';
+    const formattedEnd = isPresent ? defaultEnd : formatResumeDate(endDate);
+
+    if (formattedStart && formattedEnd) {
+        return `${formattedStart} - ${formattedEnd}`;
+    }
+    return formattedStart || formattedEnd || '';
+}
+
 // ─── ATS Modern Template ────────────────────────────────────────────────────
 const AtsModernTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
     <div style={{ width: '100%', padding: '36px 44px', color: '#1a1a2e', fontSize: '14px', lineHeight: '1.55' }}>
@@ -70,7 +158,7 @@ const AtsModernTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                                 <span style={{ color: '#4f46e5', fontWeight: 500 }}> — {exp.company}</span>
                             </div>
                             <span style={{ color: '#888', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                                {exp.startDate} – {exp.endDate || 'Present'}
+                                {formatDateRange(exp.startDate, exp.endDate)}
                             </span>
                         </div>
                         {exp.bullets && exp.bullets.length > 0 && (
@@ -94,7 +182,7 @@ const AtsModernTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                             <span style={{ fontWeight: 600 }}>{edu.degree}</span>
                             <span style={{ color: '#555' }}> — {edu.institution}</span>
                         </div>
-                        <span style={{ color: '#888', fontSize: '12px' }}>{edu.startDate} – {edu.endDate || 'Present'}</span>
+                        <span style={{ color: '#888', fontSize: '12px' }}>{formatDateRange(edu.startDate, edu.endDate)}</span>
                     </div>
                 ))}
             </Section>
@@ -150,7 +238,7 @@ const CorporateTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                         <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '16px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <strong>{exp.jobTitle}</strong>
-                                <span style={{ color: '#888', fontSize: '12px' }}>{exp.startDate} – {exp.endDate || 'Present'}</span>
+                                <span style={{ color: '#888', fontSize: '12px' }}>{formatDateRange(exp.startDate, exp.endDate)}</span>
                             </div>
                             <div style={{ color: '#1e3a5f', fontWeight: 500, marginBottom: '6px' }}>{exp.company}</div>
                             {exp.bullets && <ul style={{ margin: 0, paddingLeft: '16px' }}>{exp.bullets.map((b, bi) => <li key={bi}>{b}</li>)}</ul>}
@@ -163,7 +251,7 @@ const CorporateTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                     {data.educations.map((edu, i) => (
                         <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '8px' }}>
                             <strong>{edu.degree}</strong> — {edu.institution}
-                            <span style={{ color: '#888', fontSize: '12px', marginLeft: '8px' }}>{edu.startDate} – {edu.endDate || 'Present'}</span>
+                            <span style={{ color: '#888', fontSize: '12px', marginLeft: '8px' }}>{formatDateRange(edu.startDate, edu.endDate)}</span>
                         </div>
                     ))}
                 </Section>
@@ -192,7 +280,7 @@ const MinimalTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '20px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <strong>{exp.jobTitle}, {exp.company}</strong>
-                            <span style={{ color: '#999', fontSize: '12px' }}>{exp.startDate} – {exp.endDate || 'Present'}</span>
+                            <span style={{ color: '#999', fontSize: '12px' }}>{formatDateRange(exp.startDate, exp.endDate)}</span>
                         </div>
                         {exp.bullets && <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>{exp.bullets.map((b, bi) => <li key={bi} style={{ marginBottom: '3px', color: '#444' }}>{b}</li>)}</ul>}
                     </div>
@@ -204,7 +292,7 @@ const MinimalTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                 {data.educations.map((edu, i) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <span><strong>{edu.degree}</strong> — {edu.institution}</span>
-                        <span style={{ color: '#999', fontSize: '12px' }}>{edu.startDate} – {edu.endDate || 'Present'}</span>
+                        <span style={{ color: '#999', fontSize: '12px' }}>{formatDateRange(edu.startDate, edu.endDate)}</span>
                     </div>
                 ))}
             </MinimalSection>
@@ -238,7 +326,7 @@ const ExecutiveTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '18px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <strong style={{ fontSize: '14px' }}>{exp.company}</strong>
-                            <span style={{ color: '#888', fontSize: '12px' }}>{exp.startDate} – {exp.endDate || 'Present'}</span>
+                            <span style={{ color: '#888', fontSize: '12px' }}>{formatDateRange(exp.startDate, exp.endDate)}</span>
                         </div>
                         <div style={{ color: '#b8860b', fontStyle: 'italic', marginBottom: '6px' }}>{exp.jobTitle}</div>
                         {exp.bullets && <ul style={{ margin: 0, paddingLeft: '18px' }}>{exp.bullets.map((b, bi) => <li key={bi} style={{ marginBottom: '4px' }}>{b}</li>)}</ul>}
@@ -251,7 +339,7 @@ const ExecutiveTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                 {data.educations.map((edu, i) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '8px' }}>
                         <strong>{edu.degree}</strong> — {edu.institution}
-                        {edu.endDate && <span style={{ color: '#888', marginLeft: '8px', fontSize: '12px' }}>{edu.endDate}</span>}
+                        {edu.endDate && <span style={{ color: '#888', marginLeft: '8px', fontSize: '12px' }}>{formatResumeDate(edu.endDate)}</span>}
                     </div>
                 ))}
             </Section>
@@ -308,7 +396,7 @@ const CreativeTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                         <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginTop: '12px' }}>
                             <div style={{ fontWeight: 600 }}>{edu.degree}</div>
                             <div style={{ color: '#bdc3c7', fontSize: '11px' }}>{edu.institution}</div>
-                            <div style={{ color: '#7f8c8d', fontSize: '10px' }}>{edu.startDate} – {edu.endDate || 'Present'}</div>
+                            <div style={{ color: '#7f8c8d', fontSize: '10px' }}>{formatDateRange(edu.startDate, edu.endDate)}</div>
                         </div>
                     ))}
                 </div>
@@ -331,7 +419,7 @@ const CreativeTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                         <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                                 <div style={{ fontSize: '15px', fontWeight: 600, color: '#2c3e50' }}>{exp.jobTitle}</div>
-                                <div style={{ fontSize: '12px', color: '#1abc9c', fontWeight: 600 }}>{exp.startDate} – {exp.endDate || 'Present'}</div>
+                                <div style={{ fontSize: '12px', color: '#1abc9c', fontWeight: 600 }}>{formatDateRange(exp.startDate, exp.endDate)}</div>
                             </div>
                             <div style={{ fontSize: '14px', color: '#7f8c8d', marginBottom: '8px', fontWeight: 500 }}>{exp.company}</div>
                             {exp.bullets && exp.bullets.length > 0 && (
@@ -373,7 +461,7 @@ const AcademicTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                             <span>{edu.institution}</span>
-                            <span>{edu.startDate} – {edu.endDate || 'Present'}</span>
+                            <span>{formatDateRange(edu.startDate, edu.endDate)}</span>
                         </div>
                         <div style={{ fontStyle: 'italic' }}>{edu.degree}</div>
                         {edu.description && <div style={{ marginTop: '4px' }}>{edu.description}</div>}
@@ -389,7 +477,7 @@ const AcademicTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) => (
                     <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginBottom: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                             <span>{exp.jobTitle}, {exp.company}</span>
-                            <span>{exp.startDate} – {exp.endDate || 'Present'}</span>
+                            <span>{formatDateRange(exp.startDate, exp.endDate)}</span>
                         </div>
                         {exp.bullets && exp.bullets.length > 0 && (
                             <ul style={{ margin: '4px 0 0', paddingLeft: '20px' }}>
@@ -452,7 +540,7 @@ const TechStartupTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) =>
                         <div style={{ position: 'absolute', left: '-5px', top: '6px', width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                             <div style={{ fontSize: '16px', fontWeight: 600, color: '#f3f4f6' }}>{exp.jobTitle} <span style={{ color: '#6b7280', fontWeight: 400 }}>@ {exp.company}</span></div>
-                            <div style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{exp.startDate} – {exp.endDate || 'PRESENT'}</div>
+                            <div style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{formatDateRange(exp.startDate, exp.endDate, 'PRESENT')}</div>
                         </div>
                         {exp.bullets && exp.bullets.length > 0 && (
                             <ul style={{ margin: '8px 0 0', paddingLeft: '16px' }}>
@@ -473,7 +561,7 @@ const TechStartupTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) =>
                             <span style={{ color: '#f3f4f6', fontWeight: 500 }}>{edu.degree}</span>
                             <span style={{ color: '#9ca3af' }}> — {edu.institution}</span>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{edu.startDate} – {edu.endDate || 'PRESENT'}</div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{formatDateRange(edu.startDate, edu.endDate, 'PRESENT')}</div>
                     </div>
                 ))}
             </div>
@@ -579,7 +667,7 @@ const ModernSplitTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) =>
                                 </div>
                                 {/* Dates and Description */}
                                 <div style={{ width: '65%' }}>
-                                    <div style={{ fontWeight: 700, marginBottom: '8px', color: '#000' }}>{exp.startDate} – {exp.endDate || 'Present'}</div>
+                                    <div style={{ fontWeight: 700, marginBottom: '8px', color: '#000' }}>{formatDateRange(exp.startDate, exp.endDate)}</div>
                                     {exp.bullets && exp.bullets.length > 0 && (
                                         <div style={{ color: '#4b5563' }}>
                                             {exp.bullets.map((b, j) => <div key={j} style={{ marginBottom: '4px' }}>{b}</div>)}
@@ -600,8 +688,8 @@ const ModernSplitTemplate: React.FC<{ data: ResumeVersionData }> = ({ data }) =>
                             <div key={i} style={{ pageBreakInside: 'avoid', breakInside: 'avoid', display: 'flex', marginBottom: '20px' }}>
                                 {/* Dates */}
                                 <div style={{ width: '35%', paddingRight: '16px', color: '#4b5563' }}>
-                                    <div>{edu.startDate}</div>
-                                    <div>{edu.endDate || 'Present'}</div>
+                                    <div>{formatResumeDate(edu.startDate)}</div>
+                                    <div>{edu.endDate ? formatResumeDate(edu.endDate) : 'Present'}</div>
                                 </div>
                                 {/* Degree and Description */}
                                 <div style={{ width: '65%' }}>

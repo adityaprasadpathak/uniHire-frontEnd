@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, Loader2, User, Mail, Phone, ExternalLink, GraduationCap, Briefcase, FileUp, CheckCircle, Eye } from 'lucide-react';
 import apiClient from '../../services/apiClient';
+import { formatDateRange } from '../candidate/ResumePreviewRenderer';
 
 interface CandidateProfileModalProps {
   candidateId: number;
@@ -105,7 +106,7 @@ export default function CandidateProfileModal({ candidateId, onClose }: Candidat
                         <div className="absolute w-2 h-2 bg-indigo-500 rounded-full -left-[5px] top-2"></div>
                         <h5 className="font-bold text-slate-900">{exp.jobTitle} at {exp.companyName}</h5>
                         <p className="text-sm text-slate-500 mb-2">
-                          {exp.startDate} - {exp.currentJob ? 'Present' : (exp.endDate ? exp.endDate : 'N/A')}
+                          {formatDateRange(exp.startDate, exp.currentJob ? 'Present' : exp.endDate)}
                         </p>
                         <p className="text-sm text-slate-700 whitespace-pre-wrap">{exp.description}</p>
                       </div>
@@ -129,7 +130,7 @@ export default function CandidateProfileModal({ candidateId, onClose }: Candidat
                         <h5 className="font-bold text-slate-900">{edu.degree} in {edu.fieldOfStudy}</h5>
                         <p className="text-sm text-slate-600 font-medium">{edu.institutionName}</p>
                         <p className="text-sm text-slate-500 mb-1">
-                          {edu.startDate} - {edu.endDate ? edu.endDate : 'Present'}
+                          {formatDateRange(edu.startDate, edu.endDate)}
                         </p>
                         {edu.grade && <p className="text-sm text-slate-700">Grade: {edu.grade}</p>}
                       </div>

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Briefcase, Loader2 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
+import { formatDateRange } from './ResumePreviewRenderer';
 
 interface ExperienceData {
   jobTitle: string;
@@ -52,7 +53,7 @@ export default function ExperienceList({ experiences = [] }: { experiences: any[
               <h4 className="font-semibold text-slate-900">{exp.jobTitle}</h4>
               <p className="text-sm text-slate-600 font-medium">{exp.company}</p>
               <p className="text-xs text-slate-500 mt-1">
-                {exp.startDate} - {exp.endDate || 'Present'}
+                {formatDateRange(exp.startDate, exp.endDate)}
               </p>
               <p className="text-sm text-slate-700 mt-2">{exp.description}</p>
             </div>
